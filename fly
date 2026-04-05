@@ -1,0 +1,204 @@
+-- Full Fly Mod Menu with Fixed Mobile Directional Fly and Full Features
+
+local player = game.Players.LocalPlayer
+local userInputService = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+local tweenService = game:GetService("TweenService")
+local flySpeed = 50
+local flying = false
+local bodyVelocity
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FlyModMenu"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Create main frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 130)
+frame.Position = UDim2.new(0, 20, 0, 20)
+frame.BorderSizePixel = 0
+frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- black background
+frame.Parent = screenGui
+
+local uiCornerFrame = Instance.new("UICorner")
+uiCornerFrame.CornerRadius = UDim.new(0, 15)
+uiCornerFrame.Parent = frame
+
+-- Title (draggable)
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "Fly Mod Menu"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 22
+title.Parent = frame
+
+title.TextYAlignment = Enum.TextYAlignment.Center
+
+local dragging, dragInput, dragStart, startPos
+
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+title.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+userInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Fly Toggle
+local flyToggle = Instance.new("TextButton")
+flyToggle.Size = UDim2.new(1, -40, 0, 40)
+flyToggle.Position = UDim2.new(0, 10, 0, 40)
+flyToggle.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+flyToggle.TextColor3 = Color3.new(1, 1, 1)
+flyToggle.Font = Enum.Font.SourceSansBold
+flyToggle.TextSize = 22
+flyToggle.Text = "Fly: OFF"
+flyToggle.Parent = frame
+
+local uiCornerButton = Instance.new("UICorner")
+uiCornerButton.CornerRadius = UDim.new(0, 10)
+uiCornerButton.Parent = flyToggle
+
+-- Speed Label
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0, 50, 0, 30)
+speedLabel.Position = UDim2.new(0, 10, 0, 90)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Speed:"
+speedLabel.TextColor3 = Color3.new(1, 1, 1)
+speedLabel.Font = Enum.Font.SourceSans
+speedLabel.TextSize = 18
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Parent = frame
+
+-- Speed Input
+local speedInput = Instance.new("TextBox")
+speedInput.Size = UDim2.new(0, 120, 0, 30)
+speedInput.Position = UDim2.new(0, 70, 0, 90)
+speedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+speedInput.TextColor3 = Color3.new(1, 1, 1)
+speedInput.Font = Enum.Font.SourceSans
+speedInput.TextSize = 18
+speedInput.Text = tostring(flySpeed)
+speedInput.ClearTextOnFocus = false
+speedInput.Parent = frame
+
+local uiCornerInput = Instance.new("UICorner")
+uiCornerInput.CornerRadius = UDim.new(0, 10)
+uiCornerInput.Parent = speedInput
+
+-- Warning overlay
+local warningOverlay = Instance.new("Frame")
+warningOverlay.Size = UDim2.new(1, 0, 1, 0)
+warningOverlay.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+warningOverlay.BackgroundTransparency = 0.7
+warningOverlay.Visible = false
+warningOverlay.ZIndex = 1000
+warningOverlay.Parent = screenGui
+
+local warningText = Instance.new("TextLabel")
+warningText.Size = UDim2.new(0.8, 0, 0.3, 0)
+warningText.Position = UDim2.new(0.1, 0, 0.35, 0)
+warningText.BackgroundTransparency = 1
+warningText.TextColor3 = Color3.new(1, 1, 1)
+warningText.Font = Enum.Font.SourceSansBold
+warningText.TextSize = 36
+warningText.TextWrapped = true
+warningText.Text = "Warning: Speed over 3450!"
+warningText.ZIndex = 1001
+warningText.Parent = warningOverlay
+
+local function startFlying()
+    local character = player.Character
+    if not character then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = hrp
+end
+
+local function stopFlying()
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+end
+
+flyToggle.MouseButton1Click:Connect(function()
+    flying = not flying
+    if flying then
+        startFlying()
+        flyToggle.Text = "Fly: ON"
+    else
+        stopFlying()
+        flyToggle.Text = "Fly: OFF"
+    end
+end)
+
+speedInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local val = tonumber(speedInput.Text)
+        if val and val > 0 then
+            flySpeed = val
+        else
+            speedInput.Text = tostring(flySpeed)
+        end
+    end
+end)
+
+runService.RenderStepped:Connect(function()
+    if flying and bodyVelocity and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local cam = workspace.CurrentCamera
+        local dir = Vector3.new()
+
+        if userInputService.TouchEnabled then
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.MoveDirection.Magnitude > 0 then
+                dir = cam.CFrame.LookVector
+            end
+        else
+            if userInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
+            if userInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
+            if userInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
+            if userInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
+            if userInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
+            if userInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
+        end
+
+        if dir.Magnitude > 0 then
+            bodyVelocity.Velocity = dir.Unit * flySpeed
+        else
+            bodyVelocity.Velocity = Vector3.zero
+        end
+    end
+end)
