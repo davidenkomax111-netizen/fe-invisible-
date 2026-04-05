@@ -1,0 +1,66 @@
+local screenGui = Instance.new("ScreenGui")
+local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+screenGui.Parent = playerGui
+
+local toggle = false
+local seat
+
+local toggle_button = Instance.new("TextButton")
+toggle_button.Size = UDim2.fromScale(0.050, 0.050)
+toggle_button.Position = UDim2.fromScale(0.020, 0.020)
+toggle_button.BackgroundColor3 = Color3.fromRGB(24, 26, 31)
+toggle_button.TextColor3 = Color3.fromRGB(237, 237, 237)
+toggle_button.TextScaled = true
+toggle_button.Text = "Enable"
+toggle_button.Parent = screenGui
+
+-- draggable
+toggle_button.Active = true
+toggle_button.Draggable = true
+
+toggle_button.MouseButton1Click:Connect(function()
+    toggle = not toggle
+
+	if toggle then
+		toggle_button.Text = "Disable"
+
+        local character = game.Players.LocalPlayer.Character
+		local saved_pos = character.HumanoidRootPart.CFrame
+
+		character:MoveTo(Vector3.new(0, 1000000, 0))
+
+		task.wait(1)
+
+		seat = Instance.new("Seat")
+		seat.Anchored = false
+		seat.CanCollide = false
+		seat.Transparency = 1
+		seat.CFrame = CFrame.new(0, 1000000, 0)
+		seat.Parent = workspace
+
+		local weld = Instance.new("Weld")
+		weld.Part0 = seat
+		weld.Part1 = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+        weld.Parent = seat
+
+		seat.CFrame = saved_pos
+
+		for _, part in character:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.Transparency = 0.7
+			end
+		end
+	else
+	    local character = game.Players.LocalPlayer.Character
+		seat:Destroy()
+
+		toggle_button.Text = "Enable"
+
+		for _, part in character:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.Transparency = 0
+			end
+		end
+	end
+end)
