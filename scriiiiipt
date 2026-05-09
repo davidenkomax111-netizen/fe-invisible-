@@ -1,5 +1,6 @@
 local screenGui = Instance.new("ScreenGui")
 local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+local UIS = game:GetService("UserInputService")
 
 screenGui.Parent = playerGui
 
@@ -19,13 +20,15 @@ toggle_button.Parent = screenGui
 toggle_button.Active = true
 toggle_button.Draggable = true
 
-toggle_button.MouseButton1Click:Connect(function()
-    toggle = not toggle
+local function toggleScript()
+	toggle = not toggle
+
+	local character = game.Players.LocalPlayer.Character
+	if not character then return end
 
 	if toggle then
 		toggle_button.Text = "Disable"
 
-        local character = game.Players.LocalPlayer.Character
 		local saved_pos = character.HumanoidRootPart.CFrame
 
 		character:MoveTo(Vector3.new(0, 1000000, 0))
@@ -42,7 +45,7 @@ toggle_button.MouseButton1Click:Connect(function()
 		local weld = Instance.new("Weld")
 		weld.Part0 = seat
 		weld.Part1 = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-        weld.Parent = seat
+		weld.Parent = seat
 
 		seat.CFrame = saved_pos
 
@@ -52,8 +55,10 @@ toggle_button.MouseButton1Click:Connect(function()
 			end
 		end
 	else
-	    local character = game.Players.LocalPlayer.Character
-		seat:Destroy()
+		if seat then
+			seat:Destroy()
+			seat = nil
+		end
 
 		toggle_button.Text = "Enable"
 
@@ -62,5 +67,17 @@ toggle_button.MouseButton1Click:Connect(function()
 				part.Transparency = 0
 			end
 		end
+	end
+end
+
+-- Кнопка GUI
+toggle_button.MouseButton1Click:Connect(toggleScript)
+
+-- Кнопка "="
+UIS.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+
+	if input.KeyCode == Enum.KeyCode.Equals then
+		toggleScript()
 	end
 end)
